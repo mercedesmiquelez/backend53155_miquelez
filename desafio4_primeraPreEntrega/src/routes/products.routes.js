@@ -2,74 +2,92 @@ import { Router } from "express";
 import productManager from "../managers/productManager.js"; //Importamos el productManager
 
 const router = Router();
-router.get("/", async (req, res) => { 
-  try {
-    const { limit } = req.query;
-    const products = await productManager.getProducts(limit);
+// creamos solicitud/peticiones
+router.get("/", products);
+router.get("/:pid", productById);
+router.post("/", addProduct);
+router.put("/:pid", updateProduct);
+router.delete("/:pid", deleteProduct);
 
-    res.status(200).json(products);
-  } catch (error) {
-    console.log(error);
-  }
-});
+//para configurar las callbacks
+async function addProduct(req, res) { // lógica de carga de un nuevo producto
+    try {
+        const product = req.body;
 
-router.get("/:pid", async (req, res) => {
-  try {
-    const { pid } = req.params; // Todos los parámetros siempre vienen en formato string
+        const newProduct = await productManager.addProduct(product);
+        
+        return res.json({ status: 201, response: newProduct});
 
-    const product = await productManager.getProductById(parseInt(pid));
+    } catch (error) {
+        console.log(error);
+        return res.json({ status: error.status || 500, response: error.message || "Error" });
+    }
+};
 
-    res.status(200).json(product);
-  } catch (error) {
-    console.log(error);
-  }
-});
+async function products(req, res) { // lógica de petición de todos los productos o por un límite
+    try {
+        const { limit } = req.query; // se toma el query y se desestructura en limit
+        const products = await productManager.getProducts(limit); //se llama a la función "getProducts" y se le asigna el parámetro limit
+        if (products.length>0) {
+            return res.json({ status: 200, response: products}); // si no da error se muestra el status 200 (todo ok) y como response con el método json del objeto de respuesta se muestran los productos
+        } else {
+            const error = new Error ("Products not found");
+            error.status = 404;
+            throw error; // si no se encuentran productos se crea el error para manejarlo con el catch
+        }
+    } catch (error) {
+        console.log(error);
+        return res.json({ status: error.status || 500, response: error.message || "Error" }); // se establece el estatus del error y un mensaje para su corrección
+    }
+}
 
+async function productById (req, res) { // lógica de petición de producto por id
+    try {
+        const { pid } = req.params; // se desestructura el parámetro id como pid
+        
+        const product = await productManager.getProductById(+pid); //se llama a la función "getProductById" y se le asigna el "pid" por parámetro
 
-router.post("/", async (req, res) => { //Creamos la ruta del post y hacemos la funcion asincrona
+        if(product) {
+            return res.json({ status: 200, response: product}) // se muestra el producto con el id correspondiente
+        } else {
+            const error = new Error("Not found!");
+            error.status = 404;
+            throw error; // si el id ingresado en la ruta no existe se crea el error para manejarlo con el catch
+        }        
+    } catch (error) {
+        console.log(error);
+        return res.json({ status: error.status || 500, response: error.message || "Error" }); 
+    }
+};
 
-  try {
-    const product = req.body; //Dentro de la constante product, va a estar todo el cuerpo del "body" de lo que vamos a recibir de los productos
+async function updateProduct (req, res) { // lógica de modificación de un producto
+    try {
+        const { pid } = req.params; // captura el parámetro
+        const dataProduct = req.body; // captura el objeto con las modificaciones
 
-    const newProduct = await productManager.addProduct(product); 
+        const updateProduct = await productManager.updateProduct(pid, dataProduct);
 
-    res.status(201).json(newProduct); //Ponemos de respuesta el nuevo producto que acabamos de crear
-    
-  } catch (error) {
-    console.log(error);
-  }
-  
-})
+        res.status(200).json(updateProduct);
+        // return res.json({ status: 200, response: updateProduct});
+        
+    } catch (error) {
+        console.log(error);
+        return res.json({ status: error.status || 500, response: error.message || "Error" }); 
+    }    
+};
 
-router.put("/:pid", async (req, res) => { //Recibe el product id
+async function deleteProduct(req, res) { // lógica para eliminar un producto
+    try {
+        const { pid } = req.params;
+        
+        await productManager.deleteProduct(pid);
 
-  try {
-    const {pid} = req.params; // Va a tener el product id que se va a recibir de los parametros
-    const product = req.body; //El body va a recibir el cuerpo de lo que se va a modificar, dentro del producto
+        return res.json({ status: 200, response: `El producto con ID ${pid} ha sido eliminado`}) // se asigna código de status y se informa la eliminación
 
-    const updateProduct = await productManager.updateProduct(pid, product); //el updateProduct, toma como primer parametro el product id y como segundo parametro, la data del producto, que va a ser el product que recibimos por el body
-
-    res.status(201).json(updateProduct);
-    
-  } catch (error) {
-    console.log(error);
-  }
-  
-})
-
-router.delete("/:pid", async (req, res) => {
-
-  try {
-    const {pid} = req.params;
-
-    await productManager.deleteProduct(pid);
-
-    res.status(201).json({message: "Producto eliminado"}); //damos aviso al cliente que se elimino el producto
-    
-  } catch (error) {
-    console.log(error);
-  }
-  
-})
+    } catch (error) {
+        console.log(error);
+        return res.json({ status: error.status || 500, response: error.message || "Error" });
+    }
+};
 
 export default router;

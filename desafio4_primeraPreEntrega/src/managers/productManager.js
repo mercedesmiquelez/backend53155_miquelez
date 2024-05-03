@@ -72,7 +72,7 @@ const getProductById = async (id) => {
 
 // Actualizacion del producto
 const updateProduct = async (id, dataProduct) => {
-    await getProducts(); // Llamamos a los productos para que se asignen de nuevo a nuestra variable
+    await getProducts(id); // Llamamos a los productos para que se asignen de nuevo a nuestra variable
 
     const index = products.findIndex((product) => product.id === id); // Buscamos el valor indice que coincida con el producto ingresado
     products[index] = {

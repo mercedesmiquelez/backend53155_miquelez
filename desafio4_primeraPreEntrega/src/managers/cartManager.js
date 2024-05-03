@@ -20,7 +20,7 @@ const createCart = async () => { //Creamos un carrito, es una funcion asincrona
 
   carts.push(newCart); 
 
-  await fs.promises.writeFile(pathFile, JSON.stringify(carts)); //Se sobreescribe el archivo de carts.json en donde vamos a poner los carritos que se vayan creando
+  await fs.writeFile(pathFile, JSON.stringify(newCart)); //Se sobreescribe el archivo de carts.json en donde vamos a poner los carritos que se vayan creando
 
   return newCart;
 

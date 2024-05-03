@@ -3,37 +3,57 @@ import cartManager from "../managers/cartManager.js";
 
 const router = Router();
 
-//Creo el endpoint de post: este post va a generar automaticamente nuestro carrito
-router.post("/", async (req, res) => {
-  try {
-    const cart = await cartManager.createCart();
+// creamos solicitud/peticiones
+router.post("/", createCart);
+router.get("/:cid", cartById);
+router.post("/:cid/product/:pid", addProductToCart)
 
-    res.status(201).json(cart);
-  } catch (error) {
-    console.log(error);
-  }
-});
+async function createCart (req, res) {
+    try {
+        const cart = cartsManager.createCart();
 
-router.post("/:cid/product/:pid ", async (req, res) => {
-  try {
-    const {cid, pid} = req.params; //Obtengo 2 parametros
-    const cart = await cartManager.addProductToCart(cid, pid)
+        return res.json({status: 201, response: cart});
 
-    res.status(201).json(cart); //status 201 indicando que se creo algo
-  } catch (error) {
-    console.log(error);
-  }
-});
+    } catch (error) {
+        console.error(error);
+        return res.json({status: error.status || 500, response: error.message || "Error"});
+    }
+}; //lógica para crear un carrito
 
-router.get("/:cid", async (req, res) => {
-  try {
-    const {cid} = req.params;
-    const cart = await cartManager.getCartById(cid);
+async function cartById (req, res) {
+    try {
+        const { cid } = req.params;
+        const cart = await cartsManager.getCartById(cid);
 
-    res.status(200).json(cart); //status 200 indicando que salio todo ok
-  } catch (error) {
-    console.log(error);
-  }
-});
+        if(cart) {
+            return res.json({ status: 200, response: cart}) // se muestra el carrito con el id correspondiente
+        } else {
+            const error = new Error("Not found!");
+            error.status = 404;
+            throw error; // si el id ingresado en la ruta no existe se crea el error para manejarlo con el catch
+        }        
+    } catch (error) {
+        console.log(error);
+        return res.json({ status: error.status || 500, response: error.message || "Error" }); 
+    }
+}; //lógica de petición un carrito por id
+
+async function addProductToCart (req, res) {
+    try {
+        const { cid, pid } = req.params;
+        const cart = await cartsManager.addProductToCart(cid, pid);
+
+        if(cart) {
+            return res.json({ status: 200, response: cart}) // se muestra el carrito con el id correspondiente
+        } else {
+            const error = new Error("Not found!");
+            error.status = 404;
+            throw error; // si el id ingresado en la ruta no existe se crea el error para manejarlo con el catch
+        }        
+    } catch (error) {
+        console.log(error);
+        return res.json({ status: error.status || 500, response: error.message || "Error" }); 
+        }
+}
 
 export default router;
